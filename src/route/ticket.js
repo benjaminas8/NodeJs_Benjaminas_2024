@@ -7,6 +7,8 @@ import {
   DELETE_TICKET_BY_ID,
 } from "../controller/ticket.js";
 
+import auth from "../middleware/auth.js";
+
 const router = express.Router();
 
 router.get("/tickets/user/:userId", GET_USER_TICKETS);

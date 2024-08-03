@@ -3,6 +3,7 @@ import "dotenv/config";
 import mongoose from "mongoose";
 import cors from "cors";
 import ticketsRouter from "./src/route/ticket.js";
+import userRouter from "./src/route/user.js";
 
 const app = express();
 
@@ -17,6 +18,7 @@ mongoose
   });
 
 app.use(ticketsRouter);
+app.use(userRouter);
 
 app.use((req, res) => {
   return res.status(404).json({ message: "this end point does not exist" });

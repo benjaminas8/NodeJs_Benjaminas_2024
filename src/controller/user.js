@@ -2,14 +2,50 @@ import { v4 as uuidv4 } from "uuid";
 import UserModel from "../model/user.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import validator from "validator";
+
+const createTokens = (user) => {
+  const token = jwt.sign(
+    { email: user.email, userId: user.id },
+    process.env.JWT_SECRET,
+    { expiresIn: "2h" }
+  );
+
+  const refreshToken = jwt.sign(
+    { email: user.email, userId: user.id },
+    process.env.JWT_REFRESH_SECRET,
+    { expiresIn: "24h" }
+  );
+
+  return { token, refreshToken };
+};
 
 const CREATE_USER = async (req, res) => {
   try {
+    const { name, email, password } = req.body;
+
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({ message: "Invalid email format" });
+    }
+
+    if (!/^[A-Z]/.test(name)) {
+      return res
+        .status(400)
+        .json({ message: "Name must start with an uppercase letter" });
+    }
+
+    if (password.length < 6 || !/\d/.test(password)) {
+      return res.status(400).json({
+        message:
+          "Password must be at least 6 characters long and contain at least one number",
+      });
+    }
+
     const salt = bcrypt.genSaltSync(10);
 
     const hash = bcrypt.hashSync(req.body.password, salt);
 
-    const company = {
+    const user = {
       id: uuidv4(),
       name: req.body.name,
       email: req.body.email,
@@ -17,16 +53,19 @@ const CREATE_USER = async (req, res) => {
       moneyBalance: req.body.moneyBalance,
     };
 
-    const response = await new CompanyModel(company);
+    const response = await new UserModel(user);
 
     await response.save();
 
-    return res
-      .status(201)
-      .json({ message: "User was created", response: response });
+    const { token, refreshToken } = createTokens(user);
+
+    return res.status(200).json({
+      message: "User was created",
+      response: response,
+    });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: "Error in aplication" });
+    res.status(500).json({ message: "Error in application" });
   }
 };
 
@@ -51,16 +90,36 @@ const LOGIN = async (req, res) => {
         .json({ message: "Your email or password was wrong" });
     }
 
-    const token = jwt.sign(
-      { email: user.email, userId: user.id },
-      process.env.JWT_SECRET,
-      { expiresIn: "24h" }
-    );
+    const { token, refreshToken } = createTokens(user);
 
-    return res.status(200).json({ token: token });
+    return res.status(200).json({ token, refreshToken });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: "Error in aplication" });
+    res.status(500).json({ message: "Error in application" });
+  }
+};
+
+const REFRESH_TOKEN = async (req, res) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) {
+    return res
+      .status(403)
+      .json({ message: "Refresh token is expired please log in again" });
+  }
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    const user = await UserModel.findOne({ id: decoded.userId });
+
+    if (!user) {
+      return res.status(401).json({ message: "Invalid refresh token" });
+    }
+
+    const { token, refreshToken: newRefreshToken } = createTokens(user);
+
+    return res.status(200).json({ token, refreshToken: newRefreshToken });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Error in application" });
   }
 };
 
@@ -70,7 +129,7 @@ const GET_ALL_ACTIVE_USERS = async (req, res) => {
     return res.status(200).json({ users: response });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: "Error in aplication" });
+    res.status(500).json({ message: "Error in application" });
   }
 };
 
@@ -83,8 +142,14 @@ const GET_USER_BY_ID = async (req, res) => {
     return res.status(200).json({ response: response });
   } catch (err) {
     console.log(err);
-    return res.status(500).json({ message: "error in aplication" });
+    return res.status(500).json({ message: "error in application" });
   }
 };
 
-export { CREATE_USER, LOGIN, GET_ALL_ACTIVE_USERS, GET_USER_BY_ID };
+export {
+  CREATE_USER,
+  LOGIN,
+  REFRESH_TOKEN,
+  GET_ALL_ACTIVE_USERS,
+  GET_USER_BY_ID,
+};
