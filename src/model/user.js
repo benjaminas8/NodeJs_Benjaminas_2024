@@ -6,6 +6,7 @@ const userSchema = mongoose.Schema({
   email: { type: String, requred: true },
   password: { type: String, requred: true },
   moneyBalance: { type: Number, requred: true },
+  bought_tickets: [{ type: String, requred: false }],
 });
 
 export default mongoose.model("User", userSchema);

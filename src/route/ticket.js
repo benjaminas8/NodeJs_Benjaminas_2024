@@ -5,15 +5,20 @@ import {
   GET_TICKET_BY_ID,
   CREATE_TICKET,
   DELETE_TICKET_BY_ID,
+  BUY_TICKET,
 } from "../controller/ticket.js";
 
 import auth from "../middleware/auth.js";
+import validate from "../middleware/validation.js";
+import ticketSchema from "../schema/ticket.js";
+import buyTicketSchema from "../schema/buyTicket.js";
 
 const router = express.Router();
 
-router.get("/tickets/user/:userId", GET_USER_TICKETS);
+router.get("/users/:userId/tickets", GET_USER_TICKETS);
 router.get("/tickets/:id", GET_TICKET_BY_ID);
-router.post("/tickets", CREATE_TICKET);
+router.post("/tickets", validate(ticketSchema), CREATE_TICKET);
+router.post("/tickets/buy", auth, validate(buyTicketSchema), BUY_TICKET);
 router.delete("/tickets/:id", DELETE_TICKET_BY_ID);
 
 // buy ticket

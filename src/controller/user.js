@@ -125,7 +125,7 @@ const REFRESH_TOKEN = async (req, res) => {
 
 const GET_ALL_ACTIVE_USERS = async (req, res) => {
   try {
-    const response = await UserModel.find();
+    const response = await UserModel.find().sort({ name: 1 });
     return res.status(200).json({ users: response });
   } catch (err) {
     console.log(err);
@@ -135,14 +135,16 @@ const GET_ALL_ACTIVE_USERS = async (req, res) => {
 
 const GET_USER_BY_ID = async (req, res) => {
   try {
-    const response = await new UserModel.findOne({ id: req.params.id });
+    const response = await UserModel.findOne({ id: req.params.id });
 
-    await response.save();
+    if (!response) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
     return res.status(200).json({ response: response });
   } catch (err) {
     console.log(err);
-    return res.status(500).json({ message: "error in application" });
+    return res.status(500).json({ message: "Error in application" });
   }
 };
 

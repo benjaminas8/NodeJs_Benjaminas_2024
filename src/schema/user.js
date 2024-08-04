@@ -1,9 +1,12 @@
 import Joi from "joi";
 
-export default Joi.object({
-  id: Joi.string().required(),
-  name: Joi.string().required(),
-  email: Joi.string().required(),
-  password: Joi.string().required(),
-  moneyBalance: Joi.number().required(),
+const userSchema = Joi.object({
+  name: Joi.string()
+    .pattern(/^[A-Z]/)
+    .required(),
+  email: Joi.string().email().required(),
+  password: Joi.string().min(6).pattern(/\d/).required(),
+  moneyBalance: Joi.number().min(0).required(),
 });
+
+export default userSchema;
